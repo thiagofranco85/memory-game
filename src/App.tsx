@@ -66,9 +66,7 @@ function shuffleArray<T>(array: T[]) {
  
 function App() {
 
-  const [cards, setCards] = useState<ICard[]>([]);
-  const [board, setBoard] = useState<JSX.Element[]>([]);  
-  const [currentCard, setCurrentCard] = useState<ICard>();
+  const [cards, setCards] = useState<ICard[]>([]); 
   const [numOfAttempts, setNumOfAttempts] = useState<number>(0);
 
   function buildCards(iconNames: React.ElementType[], colors: string[]){ 
@@ -88,36 +86,15 @@ function App() {
      const objCards3 = shuffleArray(objCards.concat(objCards2));
 
    
-    setCards(objCards3);
+    return objCards3;
     
   }   
  
-  function buildBoard(objCards: ICard[]){     
 
-    const icons = objCards.map(({id, Icon, color, isActived, isMatched, name} : ICard ) => {
-      const key = uuidv4(); 
-      const flipped = isMatched ? 'flipped' : '';
-      return  (
-        <div className={`card ${flipped}`} key={key} onClick={ (event) => {handleFlipCard(event); }}>
-          <div className="front" id="cardFront"> 
-            <QuestionMark key={key} data-id={id} size={100} weight="bold" color="black" />  
-            {/* name é um hash gerado pelo uuid. */}
-            <small style={{ fontSize: '12px' }}>{name}</small>
-          </div>
-          <div className="back" id="cardBack">
-            <Icon key={key} size={100} weight="duotone" isactive={isActived.toString()} ismatched={isMatched.toString()} color={color} />
-          </div>
-        </div>        
-      )
-              
-    });
 
-    setBoard(icons);    
-  }
+  function handleFlipCard(id:string) {
 
-  function handleFlipCard(event: React.MouseEvent<HTMLDivElement>) {
-
-    const idCurrentCard = event.currentTarget.children[0].children[0].getAttribute('data-id');    
+    const idCurrentCard = id    
  
     //verifica se é possivel jogar. Para isso somente 1 card pode estar ativo    
     if(quantityActiveCards() >= 2) {
@@ -126,7 +103,7 @@ function App() {
     }
 
     //verficar se o MESMO card clicado já está ativo
-    const flipedCard = event.currentTarget.classList.contains('flipped');
+    const flipedCard = cards.find(card => card.id === idCurrentCard)?.isActived;
     if( flipedCard ) {
       alert('Escolha outro card!');
       return;
@@ -134,75 +111,56 @@ function App() {
 
     //ativa o card no estado cards no id correspondente
     const cardsUpdated = cards.map((card) => {
-      if(card.id === idCurrentCard){
-        card.isActived = true; 
-        setCurrentCard(card);  
-        console.log('currentCard');
-        console.log(card);            
+      if (card.id === idCurrentCard) {
+        return { ...card, isActived: true };
       }
-      return card
-    })
+      return card;
+    });
+    setCards(cardsUpdated);
 
     //Verifica se deu match comparando pelo name do objeto card. O name é um hash gerado pelo uuid. 
     //Sempre haverá um match, pois o array de cards foi duplicado, modificando apenas o id. 
     //Por isso, a comparação é feita pelo name.
     const cardsMatched = cardsUpdated.filter((card) => card.isActived);
-    if( cardsMatched.length === 2 ){
-      console.log("cardsMatched");
-      console.log(cardsMatched);
- 
+    if( cardsMatched.length === 2 ){   
       if( cardsMatched[0].name === cardsMatched[1].name ){
-        console.log('Match!');
-        //Agora é necessário atualizar o estado dos cards para isMatched = true e isActived = false
-        
-        
+         //Agora é necessário atualizar o estado dos cards para isMatched = true e isActived = false        
         setNumOfAttempts(state => state + 1);
 
-        cards.map(card => {
-          if( card.name === cardsMatched[0].name || card.name === cardsMatched[1].name ){
-            card.isActived = false;
-            card.isMatched = true; 
-          } 
+        const cardsUpdatedWithMatch = cardsUpdated.map(card => {
+          if (card.name === cardsMatched[0].name || card.name === cardsMatched[1].name) {
+            return { ...card, isActived: false, isMatched: true };
+          }
           return card;
-        })  
-        //parou aqui                 
+        });
+        setCards(cardsUpdatedWithMatch);
+
+        // Verifica se o número total de cartas foi atingido
+        const quantityMatched = cardsUpdatedWithMatch.filter(card => card.isMatched).length
+        if (quantityMatched === cards.length) {
+          alert('Parabéns! Você ganhou!');
+          setCards(buildCards(iconNames, colors));
+        }
+
       }else//Se nao deu match
       {       
         setNumOfAttempts(state => state + 1);
-        //console.log('Não deu Match!');
- 
+  
         //Desvira as cartas após 1 segundo
         setTimeout(() => {          
-          //Pega as cartas ativas
-          const activeCards = getActiveCards();   
-          const cardDiv1 = getCardDivFromDOMById(activeCards[0].id)!;
-          const cardDiv2 = getCardDivFromDOMById(activeCards[1].id)!;
-          cardDiv1.closest('.card')?.classList.toggle('flipped'); 
-          cardDiv2.closest('.card')?.classList.toggle('flipped');
-
-          //Desativa as cartas ativas
-          cards.map(card => {
-            if( card.name === activeCards[0].name || card.name === activeCards[1].name ){
-              card.isActived = false; 
-            } 
+          const cardsUpdatedWithoutMatch = cardsUpdated.map(card => {
+            if (card.isActived) {
+              return { ...card, isActived: false };
+            }
             return card;
-          })
+          });
+          setCards(cardsUpdatedWithoutMatch);
         }, 1000);  
 
-      }  
-      
-      //verifica se o numero total de cartas foi atingido
-      if( quantityMatchedCards() === cards.length / 2 ){
-        alert('Parabéns! Você ganhou!'); 
-        
-        //Reinicia o jogo
-        buildCards(iconNames, colors);
-      } 
+      }      
+       
     }   
   }
-
-
-  
 
   function quantityActiveCards() : number{     
     const activeCards = cards.filter((card) => card.isActived);
@@ -214,9 +172,7 @@ function App() {
     return (activeCards.length) / 2;
   }
 
-  function getActiveCards() : ICard[] {
-    return cards.filter((card) => card.isActived);
-  }
+ 
   /*
   function verifyMatchFromActiveCards() : boolean {
     const activeCards = getActiveCards();
@@ -231,32 +187,16 @@ function App() {
   }
     */
 
-  function getCardDivFromDOMById(id: string) : HTMLElement | null {
-    return document.querySelector(`[data-id="${id}"]`);
-  }  
+ 
 
   useEffect(() => {
     
-    if( currentCard ){
-     // const cardDiv = document.querySelector(`[data-id="${currentCard.id}"]`);
-     const cardDiv = getCardDivFromDOMById(currentCard.id);
-      if( cardDiv ){ 
-        cardDiv.closest('.card')?.classList.toggle('flipped');  
-        console.log('cards');
-        console.log(cards);
-      }
-    }    
+    const objCards = buildCards(iconNames, colors);
+    setCards(objCards);
      
-
-  } ,[currentCard, cards])
+  } ,[])
  
-  useEffect(() => {
-    buildCards(iconNames, colors);
-  },[])
  
-  useEffect(() => {  
-     buildBoard(cards);    
-  }, [cards])
 
    
   return (
@@ -266,7 +206,17 @@ function App() {
       <p><strong>Num Of Attempts:</strong> {numOfAttempts}</p>
     </div>
     <div className="col d-flex flex-wrap">      
-      {board} 
+        {cards.map((card) => (
+          <div className={`card ${card.isActived || card.isMatched ? 'flipped' : ''}`} key={card.id} onClick={() => handleFlipCard(card.id)}>
+            <div className="front" id="cardFront">
+              <QuestionMark data-id={card.id} size={100} weight="bold" color="black" />
+              {/*<small style={{ fontSize: '12px' }}>{card.name}</small>*/}
+            </div>
+            <div className="back" id="cardBack">
+              <card.Icon size={100} weight="duotone" color={card.color} />
+            </div>
+          </div>
+        ))}
     </div>     
     </>
   )
