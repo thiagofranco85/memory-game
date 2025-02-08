@@ -100,3 +100,19 @@
     max-width: 640px;
   }
 }
+
+@media (max-width: 767px) {
+  .card {
+    width: 90px;
+    height: 110px;
+    margin: 5px;
+  }
+}
+
+@media (max-width: 767px) {
+  .card {
+    width: 55px;
+    height: 65px;
+    margin: 5px;
+  }
+}

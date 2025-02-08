@@ -63,24 +63,30 @@ function shuffleArray<T>(array: T[]) {
 }
 
 function playSoundRight(){
-  const audio = new Audio('/src/assets/sounds/acertou.flac');
+  const audio = new Audio('./sounds/acertou.flac');
   audio.play();
 }
 
 function playSoundWrong(){
-  const audio = new Audio('/src/assets/sounds/errou2.wav');
+  const audio = new Audio('./sounds/errou2.wav');
   audio.play();
 }
 
 function playSoundVictory(){
-  const audio = new Audio('/src/assets/sounds/victory.wav');
+  const audio = new Audio('./sounds/vitoria.flac');
+  audio.play();
+}
+
+function playSoundLaugh(){
+  const audio = new Audio('./sounds/risada.wav');
   audio.play();
 }
 
 
  
 function App() { 
-
+ 
+ 
   const [cards, setCards] = useState<ICard[]>([]); 
   const [numOfAttempts, setNumOfAttempts] = useState<number>(0);
 
@@ -130,10 +136,11 @@ function App() {
     
     return cardsActived
   }
+
  
 
-
   function handleFlipCard(id:string) {
+
 
     const idCurrentCard = id    
  
@@ -183,15 +190,25 @@ function App() {
         const quantityMatched = cardsUpdatedWithMatch.filter(card => card.isMatched).length
         if (quantityMatched === cards.length) {
           playSoundVictory();
-          setCards(buildCards(iconNames, colors));          
-          alert('Parabéns! Você ganhou!');
+
+          setTimeout(() => {
+            setCards(buildCards(iconNames, colors));
+          }, 1000);                   
+          
         }
 
       }else//Se nao deu match
       {       
         setNumOfAttempts(state => state + 1);
 
-        playSoundWrong();
+        
+
+        //dispara o som de risada após 5 tentativas frustradas
+        if( numOfAttempts - quantityMatchedCards() >= 4 && numOfAttempts % 4 === 0){
+          playSoundLaugh();
+        } else{
+          playSoundWrong();
+        }
   
         //Desvira as cartas após 1 segundo
         setTimeout(() => {          
