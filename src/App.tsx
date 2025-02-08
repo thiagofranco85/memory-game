@@ -62,9 +62,24 @@ function shuffleArray<T>(array: T[]) {
   return array;
 }
 
+function playSoundRight(){
+  const audio = new Audio('/src/assets/sounds/acertou.flac');
+  audio.play();
+}
+
+function playSoundWrong(){
+  const audio = new Audio('/src/assets/sounds/errou2.wav');
+  audio.play();
+}
+
+function playSoundVictory(){
+  const audio = new Audio('/src/assets/sounds/victory.wav');
+  audio.play();
+}
+
 
  
-function App() {
+function App() { 
 
   const [cards, setCards] = useState<ICard[]>([]); 
   const [numOfAttempts, setNumOfAttempts] = useState<number>(0);
@@ -85,10 +100,36 @@ function App() {
      const objCards2 = objCards.map(card => ({ ...card, id: uuidv4()}));
      const objCards3 = shuffleArray(objCards.concat(objCards2));
 
+     setTimeout(() => {  
+      const activedCards = showAllCards(objCards3);    
+      setCards(activedCards);
+    }, 500)
+
+    setTimeout(() => {  
+      const hideCards = hideAllCards(objCards3);    
+      setCards(hideCards);
+    }, 1250) 
+
    
     return objCards3;
     
   }   
+
+  function showAllCards(objCards: ICard[]) : ICard[] {
+    const cardsActived = objCards.map((card) => {
+      return {...card, isActived: true}
+    }) 
+
+    return cardsActived
+  }
+
+  function hideAllCards(objCards: ICard[]) : ICard[] {
+    const cardsActived = objCards.map((card) => {
+      return {...card, isActived: false}
+    }) 
+    
+    return cardsActived
+  }
  
 
 
@@ -133,18 +174,24 @@ function App() {
           }
           return card;
         });
+
+        playSoundRight();
+
         setCards(cardsUpdatedWithMatch);
 
         // Verifica se o número total de cartas foi atingido
         const quantityMatched = cardsUpdatedWithMatch.filter(card => card.isMatched).length
         if (quantityMatched === cards.length) {
+          playSoundVictory();
+          setCards(buildCards(iconNames, colors));          
           alert('Parabéns! Você ganhou!');
-          setCards(buildCards(iconNames, colors));
         }
 
       }else//Se nao deu match
       {       
         setNumOfAttempts(state => state + 1);
+
+        playSoundWrong();
   
         //Desvira as cartas após 1 segundo
         setTimeout(() => {          
@@ -172,29 +219,17 @@ function App() {
     return (activeCards.length) / 2;
   }
 
- 
-  /*
-  function verifyMatchFromActiveCards() : boolean {
-    const activeCards = getActiveCards();
-    if( activeCards.length === 2 ){
-      if( activeCards[0].name === activeCards[1].name ){
-        return true;
-      }else{
-        return false;
-      }
-    }
-    return false;
-  }
-    */
 
- 
 
   useEffect(() => {
     
     const objCards = buildCards(iconNames, colors);
+
     setCards(objCards);
-     
+   
   } ,[])
+
+ 
  
  
 
@@ -202,8 +237,8 @@ function App() {
   return (
     <>
     <div>
-      <p><strong>Matched Cards:</strong> {quantityMatchedCards()}</p>
-      <p><strong>Num Of Attempts:</strong> {numOfAttempts}</p>
+      <h6>Matched Cards <span className="badge bg-primary">{quantityMatchedCards()}</span></h6>
+      <h6>Number of Attempts <span className="badge bg-danger">{numOfAttempts}</span></h6>       
     </div>
     <div className="col d-flex flex-wrap">      
         {cards.map((card) => (
